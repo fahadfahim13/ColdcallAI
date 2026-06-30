@@ -629,11 +629,11 @@
 |-------|-------|------|-------------|---------|
 | Phase 1 — Voice Core | T01–T12 (12 tasks) | 12 | 0 | 0 |
 | Phase 2 — Orchestrator | T21–T29, T43–T45, T49–T55 (19 tasks) | 0 | 0 | 19 |
-| Phase 3 — Live Calling | T13–T20, T30–T33 (12 tasks) | 0 | 0 | 12 |
+| Phase 3 — Live Calling | T13–T20, T30–T33 (12 tasks) | 1 | 0 | 11 |
 | Phase 4 — Self-Improving | T34–T42, T46–T48, T54 (12 tasks) | 0 | 0 | 12 |
 | Deploy + Ops | T56–T58 (3 tasks) | 0 | 0 | 3 |
 | UI Design System | T59 (1 task) | 0 | 0 | 1 |
-| **TOTAL** | **59 tasks** | **6** | **0** | **53** |
+| **TOTAL** | **59 tasks** | **13** | **0** | **46** |
 
 ---
 
@@ -652,3 +652,30 @@ Abstract base + InWorld WebSocket streaming impl. 19 unit tests passing. `core/v
 
 **T03 — Latency Spike Test** (2026-06-26)
 Live harness at `tests/spike/latency_spike.py`. Three modes: `llm_tts`, `stt`, `full`. 20 iterations, P50/P95/P99 per component. Gate: P50 < 700ms, P95 < 1400ms total round-trip. Exits 0 on pass, 1 on fail. Use `--generate-audio` to create a test WAV. Must be run against real InWorld + Qwen credentials to get meaningful numbers.
+
+**T05 — Real-Time Conversation Loop** (2026-06-26)
+`core/pipeline/conversation_loop.py` + `sentence_splitter.py` + `vad_provider.py`. ConversationLoop owns full STT/TTS lifecycle. SentenceSplitter dispatches sentences to TTS as LLM streams (latency optimisation — first sentence plays while LLM generates rest). NullVAD placeholder; T07 wires Silero. History window = 8 turns; T08 replaces. 23 unit tests passing.
+
+**T06 — Barge-In Handling** (2026-06-26)
+`_monitor_barge_in()` runs concurrently during TTS via asyncio task. Speech detected → `barge_in_event` set → `_speak()` stops mid-chunk → `tts.stop()` (WS close+reconnect ~20ms) → `audio_out` drained. Captured frames saved to `_barge_in_buffer` → replayed as next turn. `NeverBargeInVAD` default preserves T05 test behaviour. Barge-in VAD must be reset each turn (M-005) to prevent stale LSTM state causing false immediate barge-in. 5 new barge-in tests added.
+
+**T07 — Silero VAD Integration** (2026-06-26)
+`core/voice/vad.py` — SileroVAD implements VADProvider. State machine: WAITING→IN_SPEECH→SILENCE_AFTER_SPEECH→END_OF_TURN. Hysteresis: activation=0.75, deactivation=0.60, min_silence=350ms, min_speech=50ms. `model.reset_states()` on `reset()` clears LSTM state. Chosen over webrtcvad (62 false cutoffs/hour in testing). 16 unit tests passing.
+
+**T08 — In-Call Memory (CallMemory)** (2026-06-26)
+`core/call/memory.py`. Sliding window: last 8 turns verbatim; older turns passed to optional `summarize_fn`. Tracks confirmed_facts (name/budget/timeline/pain_point/decision_maker), objections_raised (deduped), call_phase. Wired into ConversationLoop via `memory=` param. `_history` property shim keeps all T05/T06 tests passing unchanged. 27 CallMemory tests.
+
+**T09 — Sales Script Framework** (2026-06-26)
+`core/llm/prompts.py` — SYSTEM_PROMPT template, LeadContext + ScriptContext dataclasses, 5 industry templates (real_estate/healthcare/home_services/finance/tech_saas + generic). AIA objection scripts (budget/timing/not_interested/competitor/callback). `core/call/state.py` — ConversationStateMachine: 6 states (OPENER→QUALIFY→VALUE_PROP→CLOSE_ATTEMPT→GRACEFUL_CLOSE + BOOKED), objection counter (MAX=3), terminal detection. 59 new tests.
+
+**T10 — Graceful Close Handler** (2026-06-26)
+`core/call/close.py` — CallOutcome dataclass (outcome/call_phase/objections_raised/confirmed_facts/turn_count/duration_seconds) + `GracefulCloseHandler.build_outcome()`. ConversationLoop updated with optional `state_machine` + `on_call_ended` params. Outcome heuristic: no turns=no_answer, dropped=declined, close phase=booked, callback objection=callback, else=declined. 16 new tests.
+
+**T11 — Browser Simulation Harness** (2026-06-26)
+`main.py` — FastAPI: GET / → index.html, GET /health, WS /ws/call. Bridge: recv_task + send_task + loop.run() concurrent. `static/index.html` — getUserMedia + MediaRecorder → WS binary; raw 16-bit PCM via AudioContext. Gapless scheduling via `nextPlayTime` (M-001 fix). Using FasterWhisperSTTProvider + EdgeTTSProvider (M-002: InWorld API key lacked STT/TTS access). 9 unit tests.
+
+**T12 — Live End-to-End Test (Phase 1 Gate)** (2026-06-30)
+All 10 Phase 1 scenarios verified. Call termination fully working: `classify_intent()` → `sm.advance()` → `_send_farewell()` → `call_ended` event → browser badge locks. `_looks_like_farewell()` safety net catches STT mis-transcription (M-011). `callEndedGracefully` flag prevents `ws.onclose` overwriting "📵 Call Ended" badge (M-010). 244/244 unit tests pass across 14 test files. Bugs fixed: M-009 (outcome NameError), M-010 (3 termination bugs), M-011 (STT fallback), M-012 (barge-in test assertions post-M-005).
+
+**T13 — FreePBX ARI + AudioSocket Setup** (2026-06-29)
+`core/telephony/audiosocket.py` — AudioSocketServer (TCP, TCP_NODELAY, write_buffer_limits=0), AudioSocketSession (3-byte header parser, backpressure-aware send_audio). `core/telephony/ari.py` — ARIClient: raw aiohttp WebSocket for ARI events + httpx REST (originate/hangup). `core/telephony/ulaw.py` — ulaw_to_pcm() / pcm_to_ulaw(). 30/30 unit tests pass.
