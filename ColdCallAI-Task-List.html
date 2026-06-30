@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ColdCallAI — Full Task List</title>
+<style>
+  @page { size: A4 portrait; margin: 0; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --purple:    #6D28D9;
+    --purple-dk: #1E1B4B;
+    --purple-lt: #EDE9FE;
+    --purple-md: #4C1D95;
+    --green:     #065F46;
+    --green-lt:  #D1FAE5;
+    --green-md:  #047857;
+    --amber:     #92400E;
+    --amber-lt:  #FEF3C7;
+    --amber-md:  #B45309;
+    --blue:      #1D4ED8;
+    --blue-lt:   #DBEAFE;
+    --blue-md:   #1E40AF;
+    --gray:      #374151;
+    --gray-lt:   #F3F4F6;
+    --gray-md:   #6B7280;
+    --white:     #FFFFFF;
+    --muted:     #6B7280;
+  }
+
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 8pt;
+    color: #1F2937;
+    background: #E5E7EB;
+  }
+
+  .page {
+    width: 210mm;
+    background: var(--white);
+    display: flex;
+    flex-direction: column;
+  }
+  .page + .page { page-break-before: always; }
+
+  /* ── Doc header ─────────────────────────────── */
+  .doc-header {
+    background: var(--purple-dk);
+    color: var(--white);
+    padding: 14px 24px 10px;
+  }
+  .doc-header h1 {
+    font-size: 14pt;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+  .doc-header .sub {
+    font-size: 8pt;
+    color: #C4B5FD;
+    margin-top: 2px;
+  }
+
+  /* ── Stats strip ─────────────────────────────── */
+  .stats-strip {
+    display: flex;
+    gap: 0;
+    background: var(--purple-lt);
+    border-bottom: 2px solid var(--purple);
+  }
+  .stat-item {
+    flex: 1;
+    text-align: center;
+    padding: 6px 4px;
+    border-right: 1px solid #DDD6FE;
+  }
+  .stat-item:last-child { border-right: none; }
+  .stat-v { font-size: 11pt; font-weight: 700; color: var(--purple); display: block; }
+  .stat-l { font-size: 6.5pt; color: var(--muted); display: block; margin-top: 1px; }
+  .stat-v-amber { font-size: 11pt; font-weight: 700; color: var(--amber); display: block; }
+
+  /* ── Page content area ───────────────────────── */
+  .page-content {
+    padding: 10px 20px 12px;
+    flex: 1;
+  }
+
+  /* ── Phase section ───────────────────────────── */
+  .phase-section {
+    margin-bottom: 10px;
+    page-break-inside: avoid;
+  }
+  .phase-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 10px;
+    border-radius: 4px 4px 0 0;
+    color: var(--white);
+    font-weight: 700;
+    font-size: 8pt;
+  }
+  .ph-name { letter-spacing: 0.2px; }
+  .ph-meta { font-size: 7pt; opacity: 0.9; }
+
+  .ph-purple   { background: var(--purple); }
+  .ph-green    { background: var(--green-md); }
+  .ph-amber    { background: var(--amber-md); }
+  .ph-blue     { background: var(--blue); }
+  .ph-purpledk { background: var(--purple-md); }
+  .ph-gray     { background: var(--gray); }
+
+  /* ── Task table ──────────────────────────────── */
+  .task-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 7.5pt;
+    border: 1px solid #E5E7EB;
+    border-top: none;
+  }
+  .task-table tr:nth-child(even) td { background: #FAFAFA; }
+  .task-table td {
+    padding: 3.5px 7px;
+    border-bottom: 1px solid #F3F4F6;
+    vertical-align: middle;
+  }
+  .task-table tr:last-child td { border-bottom: none; }
+
+  .td-num  { width: 22px; color: var(--muted); font-size: 7pt; text-align: right; }
+  .td-id   { width: 38px; font-family: 'Courier New', monospace; font-size: 7pt; font-weight: 700; }
+  .td-task { color: #1F2937; line-height: 1.4; }
+  .td-status { width: 22px; text-align: center; font-size: 10pt; color: #D1D5DB; }
+
+  .id-purple   { color: var(--purple); }
+  .id-green    { color: var(--green); }
+  .id-amber    { color: var(--amber-md); }
+  .id-blue     { color: var(--blue); }
+  .id-purpledk { color: var(--purple-md); }
+  .id-gray     { color: var(--gray); }
+
+  /* ── Footer ──────────────────────────────────── */
+  .doc-footer {
+    margin-top: 8px;
+    padding: 6px 20px;
+    border-top: 1px solid #E5E7EB;
+    display: flex;
+    justify-content: space-between;
+    font-size: 6.5pt;
+    color: var(--muted);
+  }
+
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="doc-header">
+    <h1>ColdCallAI &mdash; Full Task List</h1>
+    <div class="sub">AI-Powered Outbound Calling System &mdash; Complete Build Task Register</div>
+  </div>
+
+  <div class="stats-strip">
+    <div class="stat-item"><span class="stat-v">5</span><span class="stat-l">Build Phases</span></div>
+    <div class="stat-item"><span class="stat-v">58</span><span class="stat-l">Total Tasks</span></div>
+    <div class="stat-item"><span class="stat-v-amber">60&ndash;70h</span><span class="stat-l">Total Effort incl. Connection</span></div>
+    <div class="stat-item"><span class="stat-v">0</span><span class="stat-l">BizFinder Code Changes</span></div>
+    <div class="stat-item"><span class="stat-v">100</span><span class="stat-l">Calls Per Learning Batch</span></div>
+  </div>
+
+  <div class="page-content">
+
+    <!-- Phase 1 -->
+    <div class="phase-section">
+      <div class="phase-header ph-purple">
+        <span class="ph-name">Phase 1 &mdash; Voice Agent (Browser)</span>
+        <span class="ph-meta">12 tasks &middot; 10&ndash;14h &middot; Gate: P50 latency &lt; 700ms &middot; 10 test scenarios pass</span>
+      </div>
+      <table class="task-table">
+        <tr><td class="td-num">1</td><td class="td-id id-purple">T01</td><td class="td-task">InWorld STT streaming provider class</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">2</td><td class="td-id id-purple">T02</td><td class="td-task">InWorld TTS Realtime streaming provider class</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">3</td><td class="td-id id-purple">T03</td><td class="td-task">Latency spike test &mdash; measure full round-trip, gate at &lt; 1200ms</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">4</td><td class="td-id id-purple">T04</td><td class="td-task">Voice variants: load 4&ndash;6 InWorld voices, name them, config per segment</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">5</td><td class="td-id id-purple">T05</td><td class="td-task">Real-time loop: VAD &rarr; STT &rarr; Qwen (streaming) &rarr; TTS &rarr; audio out</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">6</td><td class="td-id id-purple">T06</td><td class="td-task">Barge-in: VAD detects speech during TTS &rarr; flush queue in &lt; 100ms</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">7</td><td class="td-id id-purple">T07</td><td class="td-task">Silero VAD integration with exact parameters (20ms frames, 350ms end-of-turn)</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">8</td><td class="td-id id-purple">T08</td><td class="td-task">In-call memory: CallMemory class with sliding window + confirmed_facts</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">9</td><td class="td-id id-purple">T09</td><td class="td-task">Sales script framework: system prompt template + state machine</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">10</td><td class="td-id id-purple">T10</td><td class="td-task">Graceful close: detect hangup, collect outcome, emit call_ended</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">11</td><td class="td-id id-purple">T11</td><td class="td-task">Browser WebRTC harness (FastAPI WebSocket &harr; browser mic/speaker)</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">12</td><td class="td-id id-purple">T12</td><td class="td-task">Live end-to-end test: runs all 10 test scenarios (objections, barge-in, close)</td><td class="td-status">&#9744;</td></tr>
+      </table>
+    </div>
+
+    <!-- Phase 2 -->
+    <div class="phase-section">
+      <div class="phase-header ph-green">
+        <span class="ph-name">Phase 2 &mdash; Orchestrator + Dashboard</span>
+        <span class="ph-meta">18 tasks &middot; 12&ndash;16h &middot; Gate: 50-lead CSV runs in UI &middot; analytics + recording playback functional</span>
+      </div>
+      <table class="task-table">
+        <tr><td class="td-num">1</td><td class="td-id id-green">T43</td><td class="td-task">DB schema migrations (all tables: leads, calls, campaigns, variants, qa_reports)</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">2</td><td class="td-id id-green">T44</td><td class="td-task">CSV import: parse, validate, E.164 normalize, bulk insert, embed to Qdrant</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">3</td><td class="td-id id-green">T45</td><td class="td-task">Phone normalization utility (E.164 + line type lookup)</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">4</td><td class="td-id id-green">T49</td><td class="td-task">Flexible JSONB curiosity columns on lead table</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">5</td><td class="td-id id-green">T50</td><td class="td-task">PostgreSQL + Qdrant setup (connection pooling via PgBouncer)</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">6</td><td class="td-id id-green">T21</td><td class="td-task">Lead scoring: Qwen 0&ndash;100 qualification prompt + batch scoring on import</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">7</td><td class="td-id id-green">T22</td><td class="td-task">Talking points: industry-level personalization generator</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">8</td><td class="td-id id-green">T23</td><td class="td-task">Orchestrator: LeadBrief builder with Thompson Sampling voice/script selection</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">9</td><td class="td-id id-green">T24</td><td class="td-task">Variant tagging: record exact voice/script/opener per call in call_result</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">10</td><td class="td-id id-green">T25</td><td class="td-task">QA &harr; orchestrator contract: read qa_report, apply next_batch_recommendations</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">11</td><td class="td-id id-green">T26</td><td class="td-task">Transcript generation: post-call STT + speaker diarization [AGENT]/[PROSPECT]</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">12</td><td class="td-id id-green">T27</td><td class="td-task">Outcome classifier: Qwen judge &rarr; outcome enum, sentiment, objections list</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">13</td><td class="td-id id-green">T28</td><td class="td-task">Structured answer extraction: JSON output from Qwen judge</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">14</td><td class="td-id id-green">T29</td><td class="td-task">Cost capture: track minutes + tokens + TTS characters per call</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">15</td><td class="td-id id-green">T51</td><td class="td-task">Campaign UI: create, configure, CSV upload, start/pause/stop controls</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">16</td><td class="td-id id-green">T52</td><td class="td-task">Live run monitor: real-time progress, active call view, kill switch</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">17</td><td class="td-id id-green">T53</td><td class="td-task">Results analytics: conversion charts by voice/script/industry/geo/time</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">18</td><td class="td-id id-green">T55</td><td class="td-task">Recording playback: audio player + synchronized transcript view</td><td class="td-status">&#9744;</td></tr>
+      </table>
+    </div>
+
+    <!-- Phase 3 -->
+    <div class="phase-section">
+      <div class="phase-header ph-amber">
+        <span class="ph-name">Phase 3 &mdash; Live Calling (FreePBX)</span>
+        <span class="ph-meta">12 tasks &middot; 10&ndash;14h &middot; Gate: 10 real calls &middot; AMD &gt; 70% &middot; legal checklist passed</span>
+      </div>
+      <table class="task-table">
+        <tr><td class="td-num">1</td><td class="td-id id-amber">T13</td><td class="td-task">FreePBX ARI setup + AudioSocket TCP server (port 9092/9093)</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">2</td><td class="td-id id-amber">T14</td><td class="td-task">Outbound originate: AMI originate from campaign queue</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">3</td><td class="td-id id-amber">T15</td><td class="td-task">Caller-ID pool: selection logic (geographic match, usage rotation, flag detection)</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">4</td><td class="td-id id-amber">T16</td><td class="td-task">Call recording: FreePBX MixMonitor + post-call file sync</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">5</td><td class="td-id id-amber">T17</td><td class="td-task">AMD integration: amd.conf tuning + AMDSTATUS branch in dialplan</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">6</td><td class="td-id id-amber">T18</td><td class="td-task">Concurrency control: max parallel lines + rate caps + retry queue</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">7</td><td class="td-id id-amber">T19</td><td class="td-task">Calling window enforcement: timezone-aware, reject outside 8am&ndash;9pm local</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">8</td><td class="td-id id-amber">T20</td><td class="td-task">DNC suppression: internal DB + check before every dial + opt-out handler</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">9</td><td class="td-id id-amber">T30</td><td class="td-task">After-hours dumb script: 2 questions, classify response, hang up</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">10</td><td class="td-id id-amber">T31</td><td class="td-task">Response classifier: live/voicemail/answering-service/rings-to-answer</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">11</td><td class="td-id id-amber">T32</td><td class="td-task">Probe dataset: schema + export for analysis</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">12</td><td class="td-id id-amber">T33</td><td class="td-task">Stats report: after-hours probe analytics</td><td class="td-status">&#9744;</td></tr>
+      </table>
+    </div>
+
+  </div><!-- /page-content -->
+
+  <div class="doc-footer">
+    <span>ColdCallAI &mdash; Task Register &middot; Page 1 of 2</span>
+    <span>Source: ColdCallAI-CombinedPlan.md &sect;19</span>
+  </div>
+
+</div><!-- /page 1 -->
+
+
+<!-- ══════════════════════ PAGE 2 ══════════════════════ -->
+<div class="page">
+
+  <div class="doc-header">
+    <h1>ColdCallAI &mdash; Full Task List</h1>
+    <div class="sub">Phases 4 &amp; 5 &middot; Deploy &amp; Ops</div>
+  </div>
+
+  <div class="page-content">
+
+    <!-- Phase 4 -->
+    <div class="phase-section">
+      <div class="phase-header ph-blue">
+        <span class="ph-name">Phase 4 &mdash; BizFinder AI Connection</span>
+        <span class="ph-meta">3 tasks &middot; 8&ndash;12h &middot; Gate: lead pulled &rarr; call placed &rarr; outcome written back &middot; zero BizFinder schema changes</span>
+      </div>
+      <table class="task-table">
+        <tr><td class="td-num">1</td><td class="td-id id-blue">T46</td><td class="td-task">BizFinder PostgreSQL read API: pull qualified leads into ColdCallAI campaign queue</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">2</td><td class="td-id id-blue">T47</td><td class="td-task">Business-info replication: copy lead data to local DB for QA context</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">3</td><td class="td-id id-blue">T48</td><td class="td-task">Outcome write-back: post call result, disposition, and recording link to BizFinder record</td><td class="td-status">&#9744;</td></tr>
+      </table>
+    </div>
+
+    <!-- Phase 5 -->
+    <div class="phase-section">
+      <div class="phase-header ph-purpledk">
+        <span class="ph-name">Phase 5 &mdash; Self-Improving Loop</span>
+        <span class="ph-meta">10 tasks &middot; 12&ndash;16h &middot; Gate: QA batch auto-runs &middot; variant approved in dashboard &middot; trend visible across 3+ batches</span>
+      </div>
+      <table class="task-table">
+        <tr><td class="td-num">1</td><td class="td-id id-purpledk">T34</td><td class="td-task">Voice QA hookup: intake/output contract, POST /qa/run-batch endpoint</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">2</td><td class="td-id id-purpledk">T35</td><td class="td-task">Voice performance ranking: QA ranks voices by segment conversion rate</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">3</td><td class="td-id id-purpledk">T36</td><td class="td-task">Batch runner: auto-trigger at 100 calls, batch status tracking</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">4</td><td class="td-id id-purpledk">T37</td><td class="td-task">Aggregation: per-batch rollup + per-variable breakdown</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">5</td><td class="td-id id-purpledk">T38</td><td class="td-task">Bayesian models: Beta-Binomial per variant + Thompson Sampling allocator</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">6</td><td class="td-id id-purpledk">T39</td><td class="td-task">Correlation analysis: feature matrix &rarr; Pearson/Cram&eacute;r&apos;s V vs conversion</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">7</td><td class="td-id id-purpledk">T40</td><td class="td-task">Promote/demote: threshold rules + update variant statuses</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">8</td><td class="td-id id-purpledk">T41</td><td class="td-task">Variant generator: Qwen proposes new openers from best-performing transcripts</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">9</td><td class="td-id id-purpledk">T42</td><td class="td-task">Human review gate: pending proposals UI &mdash; approve / edit / reject</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">10</td><td class="td-id id-purpledk">T54</td><td class="td-task">Loop view: batch timeline, variant lineage tree, voice leaderboard</td><td class="td-status">&#9744;</td></tr>
+      </table>
+    </div>
+
+    <!-- Ongoing -->
+    <div class="phase-section">
+      <div class="phase-header ph-gray">
+        <span class="ph-name">Ongoing &mdash; Deploy &amp; Ops</span>
+        <span class="ph-meta">3 tasks &middot; runs across all phases &middot; Gate: production deploy stable &middot; secrets never committed</span>
+      </div>
+      <table class="task-table">
+        <tr><td class="td-num">1</td><td class="td-id id-gray">T56</td><td class="td-task">Coolify service deploy: Dockerfile, docker-compose, environment variables</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">2</td><td class="td-id id-gray">T57</td><td class="td-task">Secrets management: .env per environment, never commit credentials to git</td><td class="td-status">&#9744;</td></tr>
+        <tr><td class="td-num">3</td><td class="td-id id-gray">T58</td><td class="td-task">Cost monitoring: daily/monthly caps, 80% alert threshold</td><td class="td-status">&#9744;</td></tr>
+      </table>
+    </div>
+
+    <!-- Summary bar -->
+    <div style="margin-top:12px; background:var(--purple-lt); border:1px solid #DDD6FE; border-radius:4px; padding:8px 14px;">
+      <div style="font-size:7.5pt; font-weight:700; color:var(--purple-dk); margin-bottom:4px;">Task Count by Phase</div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <span style="font-size:7pt; background:var(--purple); color:white; padding:2px 8px; border-radius:3px;">Ph.1 Voice &mdash; 12 tasks</span>
+        <span style="font-size:7pt; background:var(--green-md); color:white; padding:2px 8px; border-radius:3px;">Ph.2 Dashboard &mdash; 18 tasks</span>
+        <span style="font-size:7pt; background:var(--amber-md); color:white; padding:2px 8px; border-radius:3px;">Ph.3 FreePBX &mdash; 12 tasks</span>
+        <span style="font-size:7pt; background:var(--blue); color:white; padding:2px 8px; border-radius:3px;">Ph.4 BizFinder &mdash; 3 tasks</span>
+        <span style="font-size:7pt; background:var(--purple-md); color:white; padding:2px 8px; border-radius:3px;">Ph.5 Loop &mdash; 10 tasks</span>
+        <span style="font-size:7pt; background:var(--gray); color:white; padding:2px 8px; border-radius:3px;">Ops &mdash; 3 tasks</span>
+        <span style="font-size:7pt; background:var(--purple-dk); color:white; padding:2px 8px; border-radius:3px; font-weight:700;">Total &mdash; 58 tasks</span>
+      </div>
+    </div>
+
+  </div><!-- /page-content -->
+
+  <div class="doc-footer">
+    <span>ColdCallAI &mdash; Task Register &middot; Page 2 of 2</span>
+    <span>Source: ColdCallAI-CombinedPlan.md &sect;19</span>
+  </div>
+
+</div><!-- /page 2 -->
+
+</body>
+</html>

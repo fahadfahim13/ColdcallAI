@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ColdCallAI — Browser Harness</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: system-ui, sans-serif;
+      max-width: 580px; margin: 36px auto; padding: 0 16px;
+      background: #f8fafc; color: #1e293b;
+    }
+    h1 { font-size: 1.15rem; margin: 0 0 4px; }
+    #status { font-size: 0.82rem; color: #64748b; margin: 0 0 14px; }
+
+    /* ── State badge ─────────────────────────────────────────────────── */
+    #state-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 12px; border-radius: 20px; font-size: 0.78rem;
+      font-weight: 700; letter-spacing: 0.04em;
+      background: #e2e8f0; color: #475569;
+      margin-bottom: 14px; transition: background 0.2s, color 0.2s;
+    }
+    #state-badge.listening { background: #dcfce7; color: #15803d; }
+    #state-badge.thinking  { background: #fef9c3; color: #854d0e; }
+    #state-badge.speaking  { background: #dbeafe; color: #1d4ed8; }
+    #state-badge.error     { background: #fee2e2; color: #b91c1c; }
+
+    /* ── Call button ─────────────────────────────────────────────────── */
+    #btn {
+      display: block; width: 100%;
+      padding: 13px; font-size: 1rem; border: none; border-radius: 8px;
+      cursor: pointer; background: #2563eb; color: #fff;
+      transition: background 0.15s; margin-bottom: 18px;
+    }
+    #btn:disabled { background: #94a3b8; cursor: not-allowed; }
+    #btn.active   { background: #dc2626; }
+
+    /* ── Transcript panel ────────────────────────────────────────────── */
+    #transcript {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+      padding: 14px; min-height: 90px; max-height: 340px;
+      overflow-y: auto; margin-bottom: 14px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .t-empty { color: #94a3b8; font-size: 0.82rem; text-align: center; padding: 18px 0; }
+
+    .turn { display: flex; flex-direction: column; max-width: 88%; }
+    .turn.user      { align-self: flex-end;  align-items: flex-end; }
+    .turn.assistant { align-self: flex-start; align-items: flex-start; }
+
+    .turn .t-label {
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em;
+      margin-bottom: 3px; color: #94a3b8;
+    }
+    .turn.user      .t-label { color: #6366f1; }
+    .turn.assistant .t-label { color: #059669; }
+
+    .turn .t-bubble {
+      padding: 8px 12px; border-radius: 12px;
+      font-size: 0.87rem; line-height: 1.55; white-space: pre-wrap;
+    }
+    .turn.user      .t-bubble { background: #ede9fe; color: #3730a3; border-bottom-right-radius: 3px; }
+    .turn.assistant .t-bubble { background: #d1fae5; color: #065f46; border-bottom-left-radius: 3px; }
+
+    /* ── Debug log ───────────────────────────────────────────────────── */
+    #log {
+      font-size: 0.72rem; color: #94a3b8; white-space: pre-wrap;
+      max-height: 90px; overflow-y: auto;
+      background: #f1f5f9; border-radius: 6px; padding: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h1>ColdCallAI — Browser Test</h1>
+  <p id="status">Press Start to begin a call.</p>
+
+  <div id="state-badge">● Ready</div>
+  <button id="btn">Start Call</button>
+
+  <div id="transcript">
+    <p class="t-empty">Conversation will appear here…</p>
+  </div>
+  <div id="log"></div>
+
+  <script>
+    const btn          = document.getElementById('btn');
+    const statusEl     = document.getElementById('status');
+    const badgeEl      = document.getElementById('state-badge');
+    const transcriptEl = document.getElementById('transcript');
+    const logEl        = document.getElementById('log');
+
+    let ws                  = null;
+    let workletNode         = null;
+    let micSource           = null;
+    let audioCtx            = null;
+    let nextPlayTime        = 0;
+    let callEndedGracefully = false;  // true once server sends call_ended event
+
+    // ── Logging ────────────────────────────────────────────────────────
+    function dbg(msg) {
+      logEl.textContent += new Date().toISOString().slice(11, 23) + '  ' + msg + '\n';
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    // ── State badge ────────────────────────────────────────────────────
+    const STATES = {
+      ready:     { label: '● Ready',        cls: '' },
+      listening: { label: '🎤 Listening…',  cls: 'listening' },
+      thinking:  { label: '⚙️ Thinking…',   cls: 'thinking'  },
+      speaking:  { label: '🔊 AI Speaking', cls: 'speaking'  },
+      error:     { label: '❌ Error',        cls: 'error'     },
+      call_ended:{ label: '📵 Call Ended',  cls: 'error'     },
+    };
+
+    function setState(key) {
+      const s = STATES[key] || STATES.ready;
+      badgeEl.textContent = s.label;
+      badgeEl.className   = s.cls;
+    }
+
+    // ── Transcript display ─────────────────────────────────────────────
+    function addTurn(role, text) {
+      // Remove placeholder
+      const ph = transcriptEl.querySelector('.t-empty');
+      if (ph) ph.remove();
+
+      const wrap   = document.createElement('div');
+      wrap.className = 'turn ' + (role === 'user' ? 'user' : 'assistant');
+
+      const label  = document.createElement('div');
+      label.className = 't-label';
+      label.textContent = role === 'user' ? 'YOU' : 'AI';
+
+      const bubble = document.createElement('div');
+      bubble.className = 't-bubble';
+      bubble.textContent = text;
+
+      wrap.appendChild(label);
+      wrap.appendChild(bubble);
+      transcriptEl.appendChild(wrap);
+      transcriptEl.scrollTop = transcriptEl.scrollHeight;
+    }
+
+    // ── Server event router ────────────────────────────────────────────
+    function onServerEvent(msg) {
+      switch (msg.type) {
+        case 'state':
+          setState(msg.value);
+          if (msg.value === 'listening') {
+            statusEl.textContent = '🔴 On call — speak now.';
+          } else if (msg.value === 'thinking') {
+            statusEl.textContent = '🔴 On call — processing…';
+          } else if (msg.value === 'speaking') {
+            statusEl.textContent = '🔴 On call — AI is speaking…';
+          }
+          break;
+
+        case 'transcript':
+          addTurn(msg.role, msg.text);
+          break;
+
+        case 'error': {
+          const raw = msg.message || 'Unknown server error';
+          const errText = raw.length > 200 ? raw.slice(0, 197) + '…' : raw;
+          setState('error');
+          statusEl.textContent = '❌ Error — call ended';
+          // Show the error as a red system message in the transcript panel
+          const errDiv = document.createElement('div');
+          errDiv.style.cssText = 'padding:10px 14px;background:#fee2e2;border:1px solid #fca5a5;border-radius:8px;color:#b91c1c;font-size:0.82rem;';
+          errDiv.textContent = '⚠ ' + errText;
+          transcriptEl.appendChild(errDiv);
+          transcriptEl.scrollTop = transcriptEl.scrollHeight;
+          dbg('SERVER ERROR: ' + errText);
+          stopCall();
+          break;
+        }
+
+        case 'call_ended': {
+          callEndedGracefully = true;
+          setState('call_ended');
+          statusEl.textContent = '✅ Call ended — ' + (msg.outcome || 'done');
+          dbg('call_ended received: outcome=' + msg.outcome);
+          // Let any queued farewell audio finish before tearing down mic + WebSocket.
+          // nextPlayTime is the AudioContext end-time of the last scheduled chunk.
+          const ctx = audioCtx;
+          const delay = ctx
+            ? Math.max(0, (nextPlayTime - ctx.currentTime) * 1000) + 400
+            : 400;
+          setTimeout(() => stopCall(false), delay);
+          break;
+        }
+
+        default:
+          dbg('EVENT: ' + JSON.stringify(msg));
+      }
+    }
+
+    // ── Audio playback ─────────────────────────────────────────────────
+    function getCtx() {
+      if (!audioCtx || audioCtx.state === 'closed') {
+        // 16 kHz matches EdgeTTS PCM output and the decimated mic input.
+        audioCtx = new AudioContext({ sampleRate: 16000 });
+      }
+      return audioCtx;
+    }
+
+    function playPCM(arrayBuf) {
+      if (!arrayBuf.byteLength) return;
+      const ctx     = getCtx();
+      const samples = new Int16Array(arrayBuf);
+      const buf     = ctx.createBuffer(1, samples.length, ctx.sampleRate);
+      const ch      = buf.getChannelData(0);
+      for (let i = 0; i < samples.length; i++) ch[i] = samples[i] / 0x8000;
+
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.connect(ctx.destination);
+      // Gapless scheduling — each chunk starts exactly where the previous ended.
+      const startAt = Math.max(ctx.currentTime, nextPlayTime);
+      src.start(startAt);
+      nextPlayTime = startAt + buf.duration;
+    }
+
+    // ── Call lifecycle ─────────────────────────────────────────────────
+    async function startCall() {
+      callEndedGracefully = false;
+      btn.disabled = true;
+      statusEl.textContent = 'Requesting microphone…';
+
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      } catch (err) {
+        statusEl.textContent = 'Microphone error: ' + err.message;
+        btn.disabled = false;
+        return;
+      }
+
+      const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+      ws = new WebSocket(proto + '://' + location.host + '/ws/call');
+      ws.binaryType = 'arraybuffer';
+
+      ws.onopen = async () => {
+        statusEl.textContent = '🔴 On call (FCC disclosure: AI agent)';
+        dbg('WebSocket connected');
+        btn.textContent = 'End Call';
+        btn.classList.add('active');
+        btn.disabled = false;
+
+        const ctx = getCtx();
+        await ctx.audioWorklet.addModule('/static/audio-processor.js');
+        micSource   = ctx.createMediaStreamSource(stream);
+        workletNode = new AudioWorkletNode(ctx, 'pcm-processor');
+
+        // Send mic PCM frames to the server
+        workletNode.port.onmessage = (e) => {
+          if (ws && ws.readyState === WebSocket.OPEN) ws.send(e.data);
+        };
+
+        // Route mic through a silent gain to keep the graph alive
+        // without feeding mic audio back to speakers (echo prevention).
+        const silent = ctx.createGain();
+        silent.gain.value = 0;
+        micSource.connect(workletNode);
+        workletNode.connect(silent);
+        silent.connect(ctx.destination);
+      };
+
+      ws.onmessage = async (event) => {
+        // Text frame = JSON status/transcript/error from server
+        if (typeof event.data === 'string') {
+          try {
+            onServerEvent(JSON.parse(event.data));
+          } catch {
+            dbg('SERVER: ' + event.data);
+            statusEl.textContent = event.data;
+          }
+          return;
+        }
+        // Binary frame = raw 16-bit PCM audio from TTS
+        try {
+          const buf = event.data instanceof ArrayBuffer
+            ? event.data
+            : await event.data.arrayBuffer();
+          playPCM(buf);
+        } catch (err) {
+          dbg('playback error: ' + err.message);
+        }
+      };
+
+      ws.onerror = () => { dbg('WebSocket error'); stopCall(); };
+      ws.onclose = () => {
+        dbg('WebSocket closed (graceful=' + callEndedGracefully + ')');
+        // If call_ended was already received, stopCall() is scheduled via
+        // setTimeout — don't call it here or it overwrites the "📵 Call Ended" badge.
+        if (!callEndedGracefully) stopCall(true);
+      };
+    }
+
+    function stopCall(wsAlreadyClosed = false) {
+      const wasGraceful = callEndedGracefully;
+      callEndedGracefully = false;
+      nextPlayTime = 0;
+      if (!wasGraceful) setState('ready');
+
+      if (workletNode) { workletNode.disconnect(); workletNode = null; }
+      if (micSource) {
+        micSource.disconnect();
+        micSource.mediaStream.getTracks().forEach(t => t.stop());
+        micSource = null;
+      }
+      if (ws && !wsAlreadyClosed && ws.readyState === WebSocket.OPEN) ws.close();
+      ws = null;
+
+      statusEl.textContent = 'Call ended.';
+      btn.textContent = 'Start Call';
+      btn.classList.remove('active');
+      btn.disabled = false;
+    }
+
+    btn.addEventListener('click', () => ws ? stopCall() : startCall());
+  </script>
+</body>
+</html>

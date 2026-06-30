@@ -1,0 +1,28 @@
+.env
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+tests/e2e/gate_report.json
+tests/fixtures/audio/*.wav
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Build artifacts
+*.egg-info/
+dist/
+build/
+
+# Local IDE/tool settings
+.claude/settings.local.json
+
+# Log and report files
+tests/e2e/gate_offhours_*.txt
+*.log
+
+# Extra .env variants (keep .env.example)
+.env.local
+.env.*.local

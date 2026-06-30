@@ -1,0 +1,34 @@
+# ColdCallAI — Python dependencies
+# Install: pip install -r requirements.txt
+#
+# System dependency (NOT a pip package):
+#   ffmpeg — required by pydub for MP3 decode (EdgeTTS audio)
+#   Windows:  winget install ffmpeg   OR   choco install ffmpeg
+#   Linux:    sudo apt install ffmpeg
+#   Mac:      brew install ffmpeg
+
+# ── API framework ──────────────────────────────────────────────────────────────
+fastapi>=0.115
+uvicorn[standard]>=0.30        # includes websockets support
+
+# ── Config / logging ───────────────────────────────────────────────────────────
+pydantic-settings>=2.0
+structlog>=24
+
+# ── LLM (Qwen via vLLM OpenAI-compatible endpoint) ────────────────────────────
+openai>=1.40
+
+# ── STT — FasterWhisper (local, no API key needed) ────────────────────────────
+faster-whisper>=1.0
+numpy>=1.24
+
+# ── TTS — Microsoft Edge TTS (local, no API key needed) ───────────────────────
+edge-tts>=6.1
+pydub>=0.25                    # MP3 → PCM decode; requires system ffmpeg (see above)
+
+# ── VAD — Silero (loads from torch.hub on first run, then cached) ──────────────
+torch>=2.0                     # ~200 MB; CPU-only build OK: pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+# ── Test / e2e utilities ───────────────────────────────────────────────────────
+websockets>=12
+httpx>=0.27
